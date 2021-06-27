@@ -16,7 +16,7 @@ This repository contains code and data for the paper:
 > Community Health with Areal Data: Bayesian Inference with Survey
 > Standard Errors and Spatial Structure** *International Journal of
 > Environmental Research and Public Health* 18, no. 13: 6856.
-> <https://doi.org/10.3390/ijerph18136856>.
+> [https://doi.org/10.3390/ijerph18136856](https://nam02.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.mdpi.com%2F1660-4601%2F18%2F13%2F6856%2Fhtm&amp;data=04%7C01%7CConnor.Donegan%40UTDallas.edu%7C6a789b765f014b70c15308d93871af86%7C8d281d1d9c4d4bf7b16e032d15de9f6c%7C0%7C0%7C637602883212906229%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C1000&amp;sdata=PKevZqbmISlO2NLsrZltUEugKg1AQm8Cj7RbgSuyt8k%3D&amp;reserved).
 
 The purpose of the repository is to demonstrate implementation of the
 methodology and to share the underlying R and Stan code. For discussion
