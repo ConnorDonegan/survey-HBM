@@ -405,7 +405,7 @@ parameters {
 }
 
 transformed parameters {
-  vector[n] y_mu = log_at_risk + alpha; 
+  vector[n] y_mu = log_at_risk + phi; 
 }
 
 model {
