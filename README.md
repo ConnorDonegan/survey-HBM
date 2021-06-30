@@ -473,8 +473,6 @@ sp.df %>%
   scale_fill_gradient(
     low = "wheat2",
     high= "black", 
-#    midpoint = alpha,
-#    mid = "white",
     name = "Female deaths\n per 100,000,\n ages 55-64",
     na.value = "grey90"
   ) +
