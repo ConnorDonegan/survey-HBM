@@ -357,13 +357,9 @@ car_dl$n <- nrow(female.df)
 S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 10)
 ```
 
-The log-mortality rates are stored in the parameter `phi`. Here we calculate and map the mean of the posterior probability distributions for each county mortality rate. The color gradient is centered on the mean county mortality rate:
+The log-mortality rates are stored in the parameter `phi`. Here we calculate and map the mean of the posterior probability distributions for each county mortality rate:
 
 ```{r}
-## mean county mortality rate per 100,000
-alpha <- as.matrix(S, pars = "alpha")
-alpha <- mean( exp(alpha) ) * 100e3
-
 ## county mortality rates per 100,000
 phi <- as.matrix(S, pars = "phi")
 phi <- exp( phi ) * 100e3
@@ -373,21 +369,25 @@ female.df$phi <- apply(phi, 2, mean)
 sp.df <- readr::read_rds("data/county-data.rds")
 sp.df <- left_join(sp.df, female.df, by = "GEOID")
 
-## map mean mortality rates
+## map mortality rates
 sp.df %>%
   ggplot() +
   geom_sf(aes(fill = phi),
           lwd = 0.01
           ) +
-  scale_fill_gradient2(
-    low = "navy",
-    high= "darkred",
-    midpoint = alpha,
-    mid = "white",
+  scale_fill_gradient(
+    low = "wheat2",
+    high= "black", 
+#    midpoint = alpha,
+#    mid = "white",
     name = "Female deaths\n per 100,000,\n ages 55-64",
     na.value = "grey90"
   ) +
-  theme_void()
+  theme_void() +
+  theme(     
+       legend.position = "bottom",
+       legend.key.width = unit(2, 'cm')
+       )  
 ```
 
 ### All-cause mortality and the Index of Concentration at the Extremes (ICE)

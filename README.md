@@ -16,7 +16,7 @@ This repository contains code and data for the paper:
 > Community Health with Areal Data: Bayesian Inference with Survey
 > Standard Errors and Spatial Structure** *International Journal of
 > Environmental Research and Public Health* 18, no. 13: 6856.
-> [https://doi.org/10.3390/ijerph18136856](https://nam02.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.mdpi.com%2F1660-4601%2F18%2F13%2F6856%2Fhtm&amp;data=04%7C01%7CConnor.Donegan%40UTDallas.edu%7C6a789b765f014b70c15308d93871af86%7C8d281d1d9c4d4bf7b16e032d15de9f6c%7C0%7C0%7C637602883212906229%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C1000&amp;sdata=PKevZqbmISlO2NLsrZltUEugKg1AQm8Cj7RbgSuyt8k%3D&amp;reserved).
+> <https://doi.org/10.3390/ijerph18136856>.
 
 The purpose of the repository is to demonstrate implementation of the
 methodology and to share the underlying R and Stan code. For discussion
@@ -101,21 +101,21 @@ quantile( apply(as.matrix(S), 2, Rhat) )
 ```
 
     ##        0%       25%       50%       75%      100% 
-    ## 0.9997516 0.9999708 1.0005973 1.0022551 1.0040246
+    ## 0.9997505 0.9999724 1.0005311 1.0006829 1.0060352
 
 ``` r
 quantile( apply(as.matrix(S), 2, ess_bulk) )
 ```
 
-    ##        0%       25%       50%       75%      100% 
-    ##  921.2808 2844.0339 6214.0710 7024.8999 9476.8270
+    ##       0%      25%      50%      75%     100% 
+    ## 1048.434 1974.684 7074.647 7952.598 9863.585
 
 ``` r
 quantile( apply(as.matrix(S), 2, ess_tail) )
 ```
 
-    ##       0%      25%      50%      75%     100% 
-    ## 1498.231 1665.987 2688.078 2952.691 3471.287
+    ##        0%       25%       50%       75%      100% 
+    ##  900.9604  901.8681 2698.9552 2948.8143 3476.0234
 
 The `plot.res` function is stored in the `r-functions.R` file, and it
 provides the visual diagnostics discussed in the paper:
@@ -144,7 +144,7 @@ quantile( apply(x, 1, var  ) )
 ```
 
     ##       0%      25%      50%      75%     100% 
-    ## 15.29325 19.87897 21.02640 22.24189 29.04813
+    ## 14.77782 19.73126 20.86281 22.09522 27.62099
 
 ### CAR models in Stan
 
@@ -452,14 +452,9 @@ S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refres
 
 The log-mortality rates are stored in the parameter `phi`. Here we
 calculate and map the mean of the posterior probability distributions
-for each county mortality rate. The color gradient is centered on the
-mean county mortality rate:
+for each county mortality rate:
 
 ``` r
-## mean county mortality rate per 100,000
-alpha <- as.matrix(S, pars = "alpha")
-alpha <- mean( exp(alpha) ) * 100e3
-
 ## county mortality rates per 100,000
 phi <- as.matrix(S, pars = "phi")
 phi <- exp( phi ) * 100e3
@@ -469,21 +464,25 @@ female.df$phi <- apply(phi, 2, mean)
 sp.df <- readr::read_rds("data/county-data.rds")
 sp.df <- left_join(sp.df, female.df, by = "GEOID")
 
-## map mean mortality rates
+## map mortality rates
 sp.df %>%
   ggplot() +
   geom_sf(aes(fill = phi),
           lwd = 0.01
           ) +
-  scale_fill_gradient2(
-    low = "navy",
-    high= "darkred",
-    midpoint = alpha,
-    mid = "white",
+  scale_fill_gradient(
+    low = "wheat2",
+    high= "black", 
+#    midpoint = alpha,
+#    mid = "white",
     name = "Female deaths\n per 100,000,\n ages 55-64",
     na.value = "grey90"
   ) +
-  theme_void()
+  theme_void() +
+  theme(     
+       legend.position = "bottom",
+       legend.key.width = unit(2, 'cm')
+       )  
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)
@@ -533,13 +532,13 @@ print(S, pars = c("alpha", "beta1", "beta2", "phi_tau", "phi_rho"))
     ## post-warmup draws per chain=400, total post-warmup draws=1600.
     ## 
     ##          mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
-    ## alpha   -4.86       0 0.07 -5.00 -4.89 -4.86 -4.83 -4.74   569    1
-    ## beta1    0.31       0 0.07  0.17  0.26  0.31  0.36  0.45  1625    1
-    ## beta2   -1.67       0 0.04 -1.74 -1.69 -1.67 -1.64 -1.60  1382    1
-    ## phi_tau  0.23       0 0.01  0.22  0.23  0.23  0.24  0.24   564    1
-    ## phi_rho  1.00       0 0.00  1.00  1.00  1.00  1.00  1.00  1274    1
+    ## alpha   -4.86       0 0.05 -4.97 -4.89 -4.86 -4.83 -4.75  1411 1.00
+    ## beta1    0.31       0 0.07  0.18  0.27  0.32  0.36  0.45  1637 1.00
+    ## beta2   -1.67       0 0.03 -1.73 -1.69 -1.67 -1.65 -1.60  1641 1.00
+    ## phi_tau  0.23       0 0.01  0.22  0.23  0.23  0.24  0.24   489 1.01
+    ## phi_rho  1.00       0 0.00  1.00  1.00  1.00  1.00  1.00  1771 1.00
     ## 
-    ## Samples were drawn using NUTS(diag_e) at Sat Jun 26 16:55:17 2021.
+    ## Samples were drawn using NUTS(diag_e) at Tue Jun 29 22:53:41 2021.
     ## For each parameter, n_eff is a crude measure of effective sample size,
     ## and Rhat is the potential scale reduction factor on split chains (at 
     ## convergence, Rhat=1).
@@ -551,7 +550,7 @@ quantile(alpha, probs = c(0.05, 0.95)) * 100e3
 ```
 
     ##       5%      95% 
-    ## 701.6145 849.8919
+    ## 707.7380 841.0667
 
 ``` r
 # inequality in county mortality rates per 100,000
@@ -563,18 +562,18 @@ Q90 <- apply(phi, 1, quantile, probs = 0.90)
 mean(Q10) * 100e3
 ```
 
-    ## [1] 529.1507
+    ## [1] 529.0343
 
 ``` r
 ## the 90th percentile:
 mean(Q90) * 100e3
 ```
 
-    ## [1] 1117.01
+    ## [1] 1117.06
 
 ``` r
 ## Relative index of inequality: p90/p10:
 mean( Q90 / Q10 )
 ```
 
-    ## [1] 2.111026
+    ## [1] 2.11159
