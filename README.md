@@ -9,6 +9,7 @@
     rates](#car-model-for-all-cause-mortality-rates)
 -   [All-cause mortality and the Index of Concentration at the Extremes
     (ICE)](#all-cause-mortality-and-the-index-of-concentration-at-the-extremes-ice)
+-   [R session info](#r-session-info)
 
 This repository contains code and data for the paper:
 
@@ -39,7 +40,9 @@ features (`sf`) object. (The data, without geometry, is also stored as
 pkgs <- c("tidyverse", "spdep", "sf", "rstan")
 silent=lapply(pkgs, require, character.only = TRUE)
 rstan_options(auto_write = TRUE, javascript = FALSE)
+```
 
+``` r
 ## source some functions
 source("r-functions.R")
 
@@ -81,12 +84,12 @@ check_hmc_diagnostics(S)
     ## 
     ## Divergences:
 
-    ## 0 of 4000 iterations ended with a divergence.
+    ## 0 of 1600 iterations ended with a divergence.
 
     ## 
     ## Tree depth:
 
-    ## 0 of 4000 iterations saturated the maximum tree depth of 10.
+    ## 0 of 1600 iterations saturated the maximum tree depth of 10.
 
     ## 
     ## Energy:
@@ -94,28 +97,25 @@ check_hmc_diagnostics(S)
     ## E-BFMI indicated no pathological behavior.
 
 ``` r
-## you can print quantiles, or plot results
-## stan_rhat(S)
-## stan_ess(S)
-quantile( apply(as.matrix(S), 2, Rhat) )
+## Effective sample size and convergence (Rhat)
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+```
+
+    ##     0%    25%    50%    75%   100% 
+    ## 1031.0 2762.0 6082.5 6849.0 8764.0
+
+``` r
+quantile(m[,"Rhat"])
 ```
 
     ##        0%       25%       50%       75%      100% 
-    ## 0.9997505 0.9999724 1.0005311 1.0006829 1.0060352
+    ## 0.9993464 1.0006005 1.0007579 1.0013298 1.0048077
 
 ``` r
-quantile( apply(as.matrix(S), 2, ess_bulk) )
+#stan_rhat(S)
+#stan_ess(S)
 ```
-
-    ##       0%      25%      50%      75%     100% 
-    ## 1048.434 1974.684 7074.647 7952.598 9863.585
-
-``` r
-quantile( apply(as.matrix(S), 2, ess_tail) )
-```
-
-    ##        0%       25%       50%       75%      100% 
-    ##  900.9604  901.8681 2698.9552 2948.8143 3476.0234
 
 The `plot.res` function is stored in the `r-functions.R` file, and it
 provides the visual diagnostics discussed in the paper:
@@ -124,7 +124,7 @@ provides the visual diagnostics discussed in the paper:
 plot.res(S, z = dl$z, sf = df, W = dl$C)
 ```
 
-<img src="README_files/figure-markdown_github/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-markdown_github/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
 
 The following code reports, first, the variance of the raw ACS estimates
 for insurance coverage in Milwaukee County census tracts, and then, the
@@ -144,7 +144,7 @@ quantile( apply(x, 1, var  ) )
 ```
 
     ##       0%      25%      50%      75%     100% 
-    ## 14.77782 19.73126 20.86281 22.09522 27.62099
+    ## 15.54762 19.80351 20.98830 22.18820 27.48272
 
 ### CAR models in Stan
 
@@ -447,8 +447,46 @@ car_dl$y <- female.df$deaths.female
 car_dl$log_at_risk <- log( female.df$pop.at.risk.female )
 car_dl$n <- nrow(female.df)
 ## draw samples from the joint posterior distribution of parameters
-S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 10)
+S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 400)
 ```
+
+Check HMC diagnostics, effective sample size, and convergence:
+
+``` r
+## check MCMC diagnostics (Hamiltonian Monte Carlo)
+check_hmc_diagnostics(S)
+```
+
+    ## 
+    ## Divergences:
+
+    ## 0 of 1600 iterations ended with a divergence.
+
+    ## 
+    ## Tree depth:
+
+    ## 0 of 1600 iterations saturated the maximum tree depth of 10.
+
+    ## 
+    ## Energy:
+
+    ## E-BFMI indicated no pathological behavior.
+
+``` r
+## Effective sample size and convergence (Rhat), etc.
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+```
+
+    ##   0%  25%  50%  75% 100% 
+    ##  421 2155 3369 3909 5127
+
+``` r
+quantile(m[,"Rhat"])
+```
+
+    ##        0%       25%       50%       75%      100% 
+    ## 0.9977385 1.0005814 1.0021658 1.0044406 1.0186156
 
 The log-mortality rates are stored in the parameter `phi`. Here we
 calculate and map the mean of the posterior probability distributions
@@ -473,6 +511,8 @@ sp.df %>%
   scale_fill_gradient(
     low = "wheat2",
     high= "black", 
+#    midpoint = alpha,
+#    mid = "white",
     name = "Female deaths\n per 100,000,\n ages 55-64",
     na.value = "grey90"
   ) +
@@ -483,7 +523,7 @@ sp.df %>%
        )  
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
 ### All-cause mortality and the Index of Concentration at the Extremes (ICE)
 
@@ -512,8 +552,46 @@ distribution of parameters:
 ## compile model
 CAR_hbm <- stan_model("stan/CAR-HBM.stan")
 ## draw samples
-S <- sampling(CAR_hbm, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 10)
+S <- sampling(CAR_hbm, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 400)
 ```
+
+Check HMC diagnostics, effective sample size, and convergence:
+
+``` r
+## check MCMC diagnostics (Hamiltonian Monte Carlo)
+check_hmc_diagnostics(S)
+```
+
+    ## 
+    ## Divergences:
+
+    ## 0 of 1600 iterations ended with a divergence.
+
+    ## 
+    ## Tree depth:
+
+    ## 0 of 1600 iterations saturated the maximum tree depth of 10.
+
+    ## 
+    ## Energy:
+
+    ## E-BFMI indicated no pathological behavior.
+
+``` r
+## Effective sample size and convergence (Rhat), etc.
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+```
+
+    ##   0%  25%  50%  75% 100% 
+    ##  501 1809 2488 3026 5127
+
+``` r
+quantile(m[,"Rhat"])
+```
+
+    ##       0%      25%      50%      75%     100% 
+    ## 0.997872 1.000501 1.001630 1.003476 1.026342
 
 The following code produces a summary of the parameter values and
 quantities of interest, including the mean county mortality rate and a
@@ -530,13 +608,13 @@ print(S, pars = c("alpha", "beta1", "beta2", "phi_tau", "phi_rho"))
     ## post-warmup draws per chain=400, total post-warmup draws=1600.
     ## 
     ##          mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
-    ## alpha   -4.86       0 0.05 -4.97 -4.89 -4.86 -4.83 -4.75  1411 1.00
-    ## beta1    0.31       0 0.07  0.18  0.27  0.32  0.36  0.45  1637 1.00
-    ## beta2   -1.67       0 0.03 -1.73 -1.69 -1.67 -1.65 -1.60  1641 1.00
-    ## phi_tau  0.23       0 0.01  0.22  0.23  0.23  0.24  0.24   489 1.01
-    ## phi_rho  1.00       0 0.00  1.00  1.00  1.00  1.00  1.00  1771 1.00
+    ## alpha   -4.86       0 0.06 -4.98 -4.89 -4.86 -4.82 -4.74   763    1
+    ## beta1    0.31       0 0.07  0.18  0.27  0.31  0.36  0.45  1877    1
+    ## beta2   -1.67       0 0.03 -1.74 -1.69 -1.67 -1.65 -1.61  1358    1
+    ## phi_tau  0.23       0 0.01  0.22  0.23  0.23  0.24  0.24   684    1
+    ## phi_rho  1.00       0 0.00  1.00  1.00  1.00  1.00  1.00  1868    1
     ## 
-    ## Samples were drawn using NUTS(diag_e) at Tue Jun 29 22:53:41 2021.
+    ## Samples were drawn using NUTS(diag_e) at Sun Aug  1 10:58:39 2021.
     ## For each parameter, n_eff is a crude measure of effective sample size,
     ## and Rhat is the potential scale reduction factor on split chains (at 
     ## convergence, Rhat=1).
@@ -548,7 +626,7 @@ quantile(alpha, probs = c(0.05, 0.95)) * 100e3
 ```
 
     ##       5%      95% 
-    ## 707.7380 841.0667
+    ## 708.4216 852.0208
 
 ``` r
 # inequality in county mortality rates per 100,000
@@ -560,18 +638,74 @@ Q90 <- apply(phi, 1, quantile, probs = 0.90)
 mean(Q10) * 100e3
 ```
 
-    ## [1] 529.0343
+    ## [1] 528.9226
 
 ``` r
 ## the 90th percentile:
 mean(Q90) * 100e3
 ```
 
-    ## [1] 1117.06
+    ## [1] 1117.132
 
 ``` r
 ## Relative index of inequality: p90/p10:
 mean( Q90 / Q10 )
 ```
 
-    ## [1] 2.11159
+    ## [1] 2.112162
+
+### R session info
+
+``` r
+sessionInfo()
+```
+
+    ## R version 4.1.0 (2021-05-18)
+    ## Platform: x86_64-pc-linux-gnu (64-bit)
+    ## Running under: Ubuntu 20.04.2 LTS
+    ## 
+    ## Matrix products: default
+    ## BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0
+    ## LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0
+    ## 
+    ## locale:
+    ##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+    ##  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+    ##  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+    ##  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+    ##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+    ## [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+    ## 
+    ## attached base packages:
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
+    ## 
+    ## other attached packages:
+    ##  [1] rstan_2.21.3         StanHeaders_2.21.0-7 spdep_1.1-8         
+    ##  [4] sf_0.9-7             spData_0.3.10        sp_1.4-5            
+    ##  [7] forcats_0.5.0        stringr_1.4.0        dplyr_1.0.3         
+    ## [10] purrr_0.3.4          readr_1.4.0          tidyr_1.1.2         
+    ## [13] tibble_3.0.5         ggplot2_3.3.3        tidyverse_1.3.0     
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] nlme_3.1-152       matrixStats_0.57.0 fs_1.5.0           lubridate_1.7.9.2 
+    ##  [5] gmodels_2.18.1     httr_1.4.2         tools_4.1.0        backports_1.2.1   
+    ##  [9] R6_2.5.0           KernSmooth_2.23-20 mgcv_1.8-36        DBI_1.1.1         
+    ## [13] colorspace_2.0-0   raster_3.4-13      withr_2.4.0        gridExtra_2.3     
+    ## [17] tidyselect_1.1.0   prettyunits_1.1.1  processx_3.4.5     curl_4.3          
+    ## [21] compiler_4.1.0     cli_3.0.1          rvest_0.3.6        expm_0.999-6      
+    ## [25] xml2_1.3.2         labeling_0.4.2     scales_1.1.1       classInt_0.4-3    
+    ## [29] callr_3.5.1        proxy_0.4-26       digest_0.6.27      rmarkdown_2.6     
+    ## [33] pkgconfig_2.0.3    htmltools_0.5.1    dbplyr_2.0.0       rlang_0.4.10      
+    ## [37] readxl_1.3.1       rstudioapi_0.13    farver_2.0.3       generics_0.1.0    
+    ## [41] jsonlite_1.7.2     gtools_3.8.2       inline_0.3.17      magrittr_2.0.1    
+    ## [45] loo_2.4.1          Matrix_1.3-4       Rcpp_1.0.7         munsell_0.5.0     
+    ## [49] lifecycle_0.2.0    stringi_1.5.3      yaml_2.2.1         MASS_7.3-54       
+    ## [53] pkgbuild_1.2.0     grid_4.1.0         parallel_4.1.0     gdata_2.18.0      
+    ## [57] crayon_1.3.4       deldir_0.2-10      lattice_0.20-44    haven_2.3.1       
+    ## [61] splines_4.1.0      hms_1.0.0          knitr_1.30         ps_1.5.0          
+    ## [65] pillar_1.4.7       boot_1.3-28        codetools_0.2-18   stats4_4.1.0      
+    ## [69] LearnBayes_2.15.1  reprex_0.3.0       glue_1.4.2         evaluate_0.14     
+    ## [73] V8_3.4.0           RcppParallel_5.1.4 modelr_0.1.8       vctrs_0.3.6       
+    ## [77] cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1   xfun_0.20         
+    ## [81] broom_0.7.3        e1071_1.7-8        coda_0.19-4        class_7.3-19      
+    ## [85] units_0.7-2        ellipsis_0.3.1

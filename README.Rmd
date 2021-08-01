@@ -4,7 +4,7 @@ output:
     variant: markdown_github
     toc: true
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 header-includes:
    - \usepackage{amsmath}    
 ---
@@ -25,11 +25,13 @@ This section provides Stan code for implementing the models for small area surve
 
 To demonstrate the methodology, we model American Community Survey estimates of health insurance coverage rates for Milwaukee County census tracts. This code chunk loads the file `tract-data.rds`, a simple features (`sf`) object. (The data, without geometry, is also stored as `acs-data.csv`.)
 
-```{r echo = TRUE, fig.width = 4, fig.height = 6.5, fig.align = 'center', message = FALSE}
+```{r echo = TRUE, message = FALSE}
 pkgs <- c("tidyverse", "spdep", "sf", "rstan")
 silent=lapply(pkgs, require, character.only = TRUE)
 rstan_options(auto_write = TRUE, javascript = FALSE)
+```
 
+```{r echo = TRUE, fig.width = 4, fig.height = 6.5, fig.align = 'center', }
 ## source some functions
 source("r-functions.R")
 
@@ -52,20 +54,20 @@ dl$prior_mu <- c(10, 80, 20)
 dl$prior_tau <- c(10, 20, 20)
 
 ## draw samples from the posterior distribution of parameters (requires about 10 seconds)
-S <- sampling(car.hbm, data = dl, chains = 4, cores = 4)
+S <- sampling(car.hbm, data = dl, chains = 1, cores = 4)
 ```
 
 The following code chunk prints convergence diagnostics (split Rhat) and effective sample sizes. The effective sample size (ESS) is relevant, nominal sample size (i.e., actual number of samples drawn from the posterior distribution) much less so. Increasing the ESS reduces the MCMC standard error. Given the efficiency of the model (high ESS), we could reduce sampling time by cutting down on the number of samples collected, if needed:
 
-```{r eval=TRUE}
+```{r}
 ## check MCMC diagnostics (Hamiltonian Monte Carlo)
 check_hmc_diagnostics(S)
-## you can print quantiles, or plot results
-## stan_rhat(S)
-## stan_ess(S)
-quantile( apply(as.matrix(S), 2, Rhat) )
-quantile( apply(as.matrix(S), 2, ess_bulk) )
-quantile( apply(as.matrix(S), 2, ess_tail) )
+## Effective sample size and convergence (Rhat)
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+quantile(m[,"Rhat"])
+#stan_rhat(S)
+#stan_ess(S)
 ```
 The `plot.res` function is stored in the `r-functions.R` file, and it provides the visual diagnostics discussed in the paper:
 
@@ -344,7 +346,7 @@ generated quantities {
 
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r warning=FALSE}
 ## compile the Stan model
 CAR_pois <- stan_model("stan/CAR-poisson.stan")
 ## prepare the data for Stan
@@ -354,7 +356,18 @@ car_dl$y <- female.df$deaths.female
 car_dl$log_at_risk <- log( female.df$pop.at.risk.female )
 car_dl$n <- nrow(female.df)
 ## draw samples from the joint posterior distribution of parameters
-S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 10)
+S <- sampling(CAR_pois, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 400)
+```
+
+Check HMC diagnostics, effective sample size, and convergence:
+
+```{r eval=TRUE}
+## check MCMC diagnostics (Hamiltonian Monte Carlo)
+check_hmc_diagnostics(S)
+## Effective sample size and convergence (Rhat), etc.
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+quantile(m[,"Rhat"])
 ```
 
 The log-mortality rates are stored in the parameter `phi`. Here we calculate and map the mean of the posterior probability distributions for each county mortality rate:
@@ -408,11 +421,22 @@ car_dl$RII_prior <- c(1.6, 0.3)
 
 Compile the Stan model and then draw samples from the posterior distribution of parameters:
 
-```{r message=FALSE,warning=FALSE}
+```{r warning=FALSE}
 ## compile model
 CAR_hbm <- stan_model("stan/CAR-HBM.stan")
 ## draw samples
-S <- sampling(CAR_hbm, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 10)
+S <- sampling(CAR_hbm, data = car_dl, chains = 4, cores = 4, iter = 800, refresh = 400)
+```
+
+Check HMC diagnostics, effective sample size, and convergence:
+
+```{r eval=TRUE}
+## check MCMC diagnostics (Hamiltonian Monte Carlo)
+check_hmc_diagnostics(S)
+## Effective sample size and convergence (Rhat), etc.
+m <- monitor(S, print = FALSE)
+quantile(m[,"Bulk_ESS"])
+quantile(m[,"Rhat"])
 ```
 
 The following code produces a summary of the parameter values and quantities of interest, including the mean county mortality rate and a measure of inequality (the ratio of the 90th to 10th percentile of counties ordered by their mortality rates):
@@ -436,5 +460,8 @@ mean(Q90) * 100e3
 mean( Q90 / Q10 )
 ```
 
+### R session info
 
-
+```{r}
+sessionInfo()
+```
