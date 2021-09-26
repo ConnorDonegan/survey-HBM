@@ -28,7 +28,7 @@ To demonstrate the methodology, we model American Community Survey estimates of 
 ```{r echo = TRUE, message = FALSE}
 pkgs <- c("tidyverse", "spdep", "sf", "rstan")
 silent=lapply(pkgs, require, character.only = TRUE)
-rstan_options(auto_write = TRUE, javascript = FALSE)
+rstan_options(javascript = FALSE)
 ```
 
 ```{r echo = TRUE, fig.width = 4, fig.height = 6.5, fig.align = 'center', }
@@ -54,7 +54,7 @@ dl$prior_mu <- c(10, 80, 20)
 dl$prior_tau <- c(10, 20, 20)
 
 ## draw samples from the posterior distribution of parameters (requires about 10 seconds)
-S <- sampling(car.hbm, data = dl, chains = 1, cores = 4)
+S <- sampling(car.hbm, data = dl, chains = 4, cores = 4)
 ```
 
 The following code chunk prints convergence diagnostics (split Rhat) and effective sample sizes. The effective sample size (ESS) is relevant, nominal sample size (i.e., actual number of samples drawn from the posterior distribution) much less so. Increasing the ESS reduces the MCMC standard error. Given the efficiency of the model (high ESS), we could reduce sampling time by cutting down on the number of samples collected, if needed:
@@ -64,8 +64,8 @@ The following code chunk prints convergence diagnostics (split Rhat) and effecti
 check_hmc_diagnostics(S)
 ## Effective sample size and convergence (Rhat)
 m <- monitor(S, print = FALSE)
-quantile(m[,"Bulk_ESS"])
-quantile(m[,"Rhat"])
+quantile(m$Bulk_ESS)
+quantile(m$Rhat)
 #stan_rhat(S)
 #stan_ess(S)
 ```
