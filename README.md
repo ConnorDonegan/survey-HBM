@@ -23,7 +23,8 @@ The purpose of the repository is to demonstrate implementation of the
 methodology and to share the underlying R and Stan code. For discussion
 and details, see the published article. For the R scripts used to create
 the figures and results reported in the paper, see the online
-supplementary material published with the article.
+supplementary material published with the article. For details on
+CAR models in Stan, see this [preprint](https://osf.io/3ey65/).
 
 ### A model for small-area survey data
 
@@ -199,8 +200,7 @@ real car_normal_lpdf(vector y, vector mu,
 }
 ```
 
-The code itself may be presented in a separate paper, hopefully in the
-near future. A benefit of this code is that it permits any valid CAR
+A benefit of this code is that it permits any valid CAR
 model specification (e.g., distance weighted connectivity structures)
 and it is computationally efficient.
 
