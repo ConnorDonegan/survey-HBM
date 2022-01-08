@@ -26,6 +26,9 @@ the figures and results reported in the paper, see the online
 supplementary material published with the article. For details on
 CAR models in Stan, see this [preprint](https://osf.io/3ey65/).
 
+The methodology described below is now implemented in the [geostan](https://connordonegan.github.io/geostan/)
+R package, including the HBMs and diagnostic plots.
+
 ### A model for small-area survey data
 
 This section provides Stan code for implementing the models for small
